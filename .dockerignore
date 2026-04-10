@@ -1,0 +1,23 @@
+# Build artifacts
+build/
+install/
+log/
+
+# Git
+.git/
+.gitignore
+
+# Python
+*.pyc
+__pycache__/
+*.egg-info/
+
+# IDE
+.vscode/
+.idea/
+
+# Docker
+docker/Dockerfile
+docker/docker-compose.yaml
+docker/.dockerignore
+!docker/*.sh

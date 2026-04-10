@@ -1,0 +1,49 @@
+# ===== ROS 2 / colcon =====
+build/
+install/
+log/
+# rosbag2 recordings
+*.bag
+*.db3
+*.db3-shm
+*.db3-wal
+*.mcap
+# tf2 view_frames output
+*.gv
+*.pdf
+
+# ===== Python =====
+__pycache__/
+*.py[codz]
+*$py.class
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.venv/
+venv/
+env/
+.env
+
+# ===== Editors / IDEs =====
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.#*
+CMakeLists.txt.user
+*.user
+
+# ===== macOS =====
+.DS_Store
+._*
+.AppleDouble
+.LSOverride
+.Spotlight-V100
+.Trashes
+.fseventsd
+
+# ===== Windows =====
+Thumbs.db
+desktop.ini

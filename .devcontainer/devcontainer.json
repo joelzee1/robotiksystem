@@ -1,0 +1,45 @@
+{
+  "name": "labbar",
+  "dockerComposeFile": [
+    "../docker/docker-compose.yaml"
+  ],
+  "service": "labbar",
+  "workspaceFolder": "/workspace",
+  "shutdownAction": "stopCompose",
+  "runServices": ["labbar"],
+  "overrideCommand": true,
+
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-iot.vscode-ros",
+        "ms-python.python",
+        "ms-python.vscode-pylance",
+        "ms-vscode.cpptools",
+        "ms-vscode.cmake-tools",
+        "redhat.vscode-yaml",
+        "ms-azuretools.vscode-docker",
+        "charliermarsh.ruff"
+      ],
+      "settings": {
+        "terminal.integrated.shell.linux": "/bin/bash",
+        "python.defaultInterpreterPath": "/usr/bin/python3",
+        "[python]": {
+          "editor.defaultFormatter": "charliermarsh.ruff",
+          "editor.formatOnSave": true,
+          "editor.codeActionsOnSave": {
+            "source.organizeImports": "explicit"
+          }
+        },
+        "cmake.configureOnOpen": false,
+        "cmake.sourceDirectory": ""
+      }
+    }
+  },
+
+  "postStartCommand": "bash -c 'source /opt/ros/jazzy/setup.bash && [ -f /workspace/install/setup.bash ] && source /workspace/install/setup.bash || true'",
+
+  "remoteEnv": {
+    "DISPLAY": "${localEnv:DISPLAY}"
+  }
+}
