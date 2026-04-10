@@ -21,22 +21,17 @@ from std_msgs.msg import String
 
 
 class Listener(Node):
-    def __init__(self1):
-        super().__init__("listener1")
-        self1.sub = self1.create_subscription(
-            String, "chatter1", self1.chatter_callback, 10
+    def __init__(self):
+        super().__init__("listener")
+        self.sub = self.create_subscription(
+            String, "chatter1", self.chatter_callback, 10
         )
-    def __init__(self2):
-        super().__init__("listener2")
-        self2.sub = self2.create_subscription(
-            String, "chatter2", self2.chatter_callback, 10
+        self.sub = self.create_subscription(
+            String, "chatter2", self.chatter_callback, 10
         
         )
-    def chatter_callback(self1, msg):
-        self1.get_logger().info("I heard: [%s]" % msg.data)
-
-    def chatter_callback(self2, msg):
-        self2.get_logger().info("I heard: [%s]" % msg.data)
+    def chatter_callback(self, msg):
+        self.get_logger().info("I heard: [%s]" % msg.data)
 
 
 def main(args=None):
