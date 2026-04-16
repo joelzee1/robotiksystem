@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import threading
+import ast
 import time
 import rclpy
 from rclpy.node import Node
@@ -13,10 +14,34 @@ class TurtleBot(Node):
     def __init__(self):
         super().__init__("turtlesim_goal")
 
+        self.declare_parameter("waypoints","" )
+        raw = self.get_parameter("waypoints").value
         # FIXME: Publisher for velocity commands
         self.velocity_publisher = self.create_publisher(Twist, "/turtle1/cmd_vel", 10)
         # FIXME: Subscriber for turtle's position
         self.pose_subscriber = self.create_subscription(Pose, "/turtle1/pose", self.update_pose, 10)
+
+        
+
+
+        
+        try:
+            self.waypoints = ast.literal_eval(raw)
+        except Exception as e:
+            self.get_logger().error(f"Failed to parse waypoints parameter: {e}")
+            self.waypoints = []
+      
+
+        #if isinstance(waypoints_param, str):
+            #self.waypoints = ast.literal_eval(waypoints_param)
+        #else:
+            #self.waypoints = waypoints_param
+        
+
+         
+   
+
+        
 
         # Movement parameters
         self.max_linear_speed = 1.5
@@ -34,6 +59,8 @@ class TurtleBot(Node):
 
         # For position logging
         self.last_log_time = 0.0
+
+        
 
     def update_pose(self, data):
         """Store the turtle's current position"""
@@ -135,6 +162,7 @@ class TurtleBot(Node):
 
         # Send command to the turtle
         self.velocity_publisher.publish(vel_msg)
+    
 
 
 def main():
@@ -146,36 +174,33 @@ def main():
     spin_thread = threading.Thread(target=rclpy.spin, args=(turtlebot,))
     spin_thread.daemon = True
     spin_thread.start()
-
+    
     try:
         while True:
-            choice = input("\n1. Go to position, 2. Exit: ")
-
-            if choice == "1":
+            for kordinat in turtlebot.waypoints:
                 try:
-                    x = float(input("X: "))
-                    y = float(input("Y: "))
+                    try:
+                        x = float(kordinat[0])
+                        y = float(kordinat[1])
 
-                    # Set the goal and start moving
-                    if x>=0 and x<=11 and y>=0 and y<=11:
-                        turtlebot.get_logger().info(f"Moving to: x={x}, y={y}")
-                        turtlebot.goal_pose.x = x
-                        turtlebot.goal_pose.y = y
-                        turtlebot.moving_to_goal = True
-                    else:
-                        print("Out of bounds")
-                    # Wait for movement to complete
+                        # Set the goal and start moving
+                        if x>=0 and x<=11 and y>=0 and y<=11:
+                            turtlebot.get_logger().info(f"Moving to: x={x}, y={y}")
+                            turtlebot.goal_pose.x = x
+                            turtlebot.goal_pose.y = y
+                            turtlebot.moving_to_goal = True
+                        else:
+                            print("Out of bounds")
+                        # Wait for movement to complete
                         while turtlebot.moving_to_goal:
                             time.sleep(0.5)
                     
-                except ValueError:
+                    except ValueError:
+                        print("Please enter valid numbers")
+                except IndexError:
                     print("Please enter valid numbers")
+            break
 
-            elif choice == "2":
-                break
-
-            else:
-                print("Invalid choice")
 
     except KeyboardInterrupt:
         pass

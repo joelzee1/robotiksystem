@@ -14,7 +14,8 @@ ament_python_install_package(${PROJECT_NAME})
 
 # Install Python executables
 install(PROGRAMS
-  ${PROJECT_NAME}/gotogoal.py
+  ${PROJECT_NAME}/gotogoal2.py
+  ${PROJECT_NAME}/gotogoal1.py
   DESTINATION lib/${PROJECT_NAME}
 )
 ament_package()
