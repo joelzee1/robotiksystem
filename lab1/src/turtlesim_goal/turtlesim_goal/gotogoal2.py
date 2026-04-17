@@ -15,7 +15,7 @@ class TurtleBot(Node):
         super().__init__("turtlesim_goal")
 
         self.declare_parameter("waypoints","" )
-        raw = self.get_parameter("waypoints").value
+        input = self.get_parameter("waypoints").value
         # FIXME: Publisher for velocity commands
         self.velocity_publisher = self.create_publisher(Twist, "/turtle1/cmd_vel", 10)
         # FIXME: Subscriber for turtle's position
@@ -26,7 +26,7 @@ class TurtleBot(Node):
 
         
         try:
-            self.waypoints = ast.literal_eval(raw)
+            self.waypoints = ast.literal_eval(input)
         except Exception as e:
             self.get_logger().error(f"Failed to parse waypoints parameter: {e}")
             self.waypoints = []
