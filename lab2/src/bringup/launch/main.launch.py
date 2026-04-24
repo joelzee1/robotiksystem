@@ -17,6 +17,7 @@ def generate_launch_description():
     bringup_dir = get_package_share_directory("bringup")
     ros_gz_sim_dir = get_package_share_directory("ros_gz_sim")
     nav2_bt_navigator_dir = get_package_share_directory("nav2_bt_navigator")
+    obstacle_detection_dir = get_package_share_directory("obstacle_detection")
 
     # Default paths for files
     default_rviz_config = os.path.join(bringup_dir, "rviz", "nav2_default_view.rviz")
@@ -195,6 +196,12 @@ def generate_launch_description():
         condition=IfCondition(enable_rviz),
     )
 
+    obs_cmd = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource(
+            os.path.join(obstacle_detection_dir, "launch", "obstacle_detection.launch.py")
+        ))
+    
+
     # --- Event Handlers ---
     actions_on_spawn_exit = [
         robot_state_publisher_node,
@@ -248,5 +255,6 @@ def generate_launch_description():
     ld.add_action(register_core_on_spawn_exit)
     ld.add_action(register_rviz_headless_on_spawn_exit)
     ld.add_action(register_rviz_timer_on_spawn_exit)
+    ld.add_action(obs_cmd)
 
     return ld
