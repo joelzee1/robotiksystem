@@ -35,7 +35,7 @@ class ObstacleDetection(Node):
         self.tele_twist = Twist()
         self.tele_twist.linear.x = 0.2
         self.tele_twist.angular.z = 0.0
-
+       
         # Set up quality of service
         qos = QoSProfile(depth=10)
 
@@ -59,13 +59,29 @@ class ObstacleDetection(Node):
     def get_odom_callback(self, msg):
         self.pose = msg.pose.pose
         oriList = [self.pose.orientation.x, self.pose.orientation.y, self.pose.orientation.z, self.pose.orientation.w]
-        (roll, pitch, yaw) = euler_from_quaternion(oriList)
-        self.get_logger().info(f"Robot state  {self.pose.position.x, self.pose.position.y, yaw}")
+        (roll, pitch, self.yaw) = euler_from_quaternion(oriList)
+        self.get_logger().info(f"Robot state  {self.pose.position.x, self.pose.position.y, self.yaw}")
 
     def scan_callback(self, msg):
         """Store laser scan data when received"""
         self.scan_ranges = msg.ranges
+            # Filtrera bort ogiltiga värden (inf, nan)
+        valid_ranges = [(i, r) for i, r in enumerate(msg.ranges) if math.isfinite(r)]
+
+        # Närmaste hinder
+        i, d = min(valid_ranges, key=lambda x: x[1])
+        angle = msg.angle_min + i * msg.angle_increment
+
+        # OBS! Vissa Lidar-sensorer rapporterar vinklar 0 till 2*pi. 
+        # Normalisera till [-pi, pi] annars blir roboten blind på sin högra sida!
+        angle = math.atan2(math.sin(angle), math.cos(angle))
+
+        # Hindrets position relativt roboten
+        self.x_obstacle = d * math.cos(angle)
+        self.y_obstacle = d * math.sin(angle)
+        self.obstacle_distance = i
         self.has_scan_received = True
+        
 
     def cmd_vel_raw_callback(self, msg):
         """Store teleop commands when received"""
@@ -77,6 +93,21 @@ class ObstacleDetection(Node):
             self.detect_obstacle()
 
     def detect_obstacle(self):
+
+
+        xgoal = 3.0
+        ygoal = 3.0
+        Kp = 3
+        goal_diff = 0.2
+        
+        """"
+        desired_angle = math.atan2(ygoal - self.pose.position.y, xgoal - self.pose.position.x)
+        angular_difference = math.atan2(math.sin(desired_angle - self.yaw), math.cos(desired_angle - self.yaw))
+        self.tele_twist.angular.z = Kp * angular_difference
+        if(goal_diff > math.sqrt((xgoal-self.pose.position.x)**2 + (ygoal-self.pose.position.y)**2)):
+            self.tele_twist.linear.x = 0.0
+        """
+
         """
         TODO: Implement obstacle detection and avoidance!
         
@@ -102,7 +133,6 @@ class ObstacleDetection(Node):
         - twist.angular.z = P * e_theta
         - Choose P
         
-
         CONTROLLING THE ROBOT (Twist message):
         - twist.linear.x: Forward/backward (positive = forward, negative = backward)
         - twist.angular.z: Rotation (positive = left, negative = right)
@@ -117,11 +147,29 @@ class ObstacleDetection(Node):
             return
             
         # Find the closest obstacle in any direction (full 360° scan)
-        obstacle_distance = min(valid_ranges)
-
+        
+        
+           
+    
+        obstacle_angle = math.atan2(self.y_obstacle - self.pose.position.y, self.x_obstacle - self.pose.position.x)
+        if(self.obstacle_distance < self.stop_distance):
+            new_route = obstacle_angle + math.pi/2
+            self.tele_twist.angular.z = new_route
+            #angular_difference_o = math.atan2(math.sin(new_route - self.yaw), math.cos(new_route- self.yaw))
+            #self.tele_twist.angular.z =Kp * angular_difference_o
+       
+            
+            
+        
+        desired_angle = math.atan2(ygoal - self.pose.position.y, xgoal - self.pose.position.x)
+        angular_difference = math.atan2(math.sin(desired_angle - self.yaw), math.cos(desired_angle - self.yaw))
+        self.tele_twist.angular.z = Kp * angular_difference
+        if(goal_diff > math.sqrt((xgoal-self.pose.position.x)**2 + (ygoal-self.pose.position.y)**2)):
+            self.tele_twist.linear.x = 0.0
         # TODO: Implement your obstacle detection logic here!
         # Remember to use obstacle_distance and self.stop_distance in your implementation.
         # Remember to find the angle of the closest obstacle
+
 
         # For now, just use the teleop command (unsafe - replace with your code)
         twist = self.tele_twist
