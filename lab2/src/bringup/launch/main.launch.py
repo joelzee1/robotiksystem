@@ -10,15 +10,14 @@ from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch_ros.actions import Node
 from launch.conditions import IfCondition
 from launch.event_handlers import OnProcessExit
-from time import sleep
 
 def generate_launch_description():
     # --- Paths ---
     bringup_dir = get_package_share_directory("bringup")
     ros_gz_sim_dir = get_package_share_directory("ros_gz_sim")
     nav2_bt_navigator_dir = get_package_share_directory("nav2_bt_navigator")
+    
     obstacle_detection_dir = get_package_share_directory("obstacle_detection")
-
     # Default paths for files
     default_rviz_config = os.path.join(bringup_dir, "rviz", "nav2_default_view.rviz")
     default_nav_params = os.path.join(bringup_dir, "params", "nav2_params.yaml")
@@ -29,6 +28,7 @@ def generate_launch_description():
         nav2_bt_navigator_dir,
         "behavior_trees",
         "navigate_to_pose_w_replanning_and_recovery.xml",
+    
     )
     burger_sdf = os.path.join(bringup_dir, "models", "turtlebot3_burger", "model.sdf")
     bridge_params = os.path.join(bringup_dir, "params", "turtlebot3_burger_bridge.yaml")
@@ -196,11 +196,6 @@ def generate_launch_description():
         condition=IfCondition(enable_rviz),
     )
 
-    obs_cmd = IncludeLaunchDescription(
-        PythonLaunchDescriptionSource(
-            os.path.join(obstacle_detection_dir, "launch", "obstacle_detection.launch.py")
-        ))
-    
 
     # --- Event Handlers ---
     actions_on_spawn_exit = [
@@ -234,6 +229,13 @@ def generate_launch_description():
             )
         ),
     )
+
+    obs_cmd = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource(
+            os.path.join(obstacle_detection_dir, "launch", "obstacle_detection.launch.py")
+        ))
+    
+
 
     # --- Add Actions to Launch Description ---
     ld.add_action(declare_use_sim_time_arg)

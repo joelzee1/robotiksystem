@@ -9,7 +9,7 @@ import math
 from nav_msgs.msg import Odometry
 from geometry_msgs.msg import Pose
 from tf_transformations import euler_from_quaternion
-
+from time import sleep
 
 class ObstacleDetection(Node):
     """
@@ -30,10 +30,10 @@ class ObstacleDetection(Node):
         # Store received data
         self.scan_ranges = []
         self.has_scan_received = False
-        
+        self.avoiding = False
         # Default motion command (slow forward)
         self.tele_twist = Twist()
-        self.tele_twist.linear.x = 0.2
+        self.tele_twist.linear.x = 0.0
         self.tele_twist.angular.z = 0.0
        
         # Set up quality of service
@@ -58,6 +58,7 @@ class ObstacleDetection(Node):
 
     def get_odom_callback(self, msg):
         self.pose = msg.pose.pose
+        
         oriList = [self.pose.orientation.x, self.pose.orientation.y, self.pose.orientation.z, self.pose.orientation.w]
         (roll, pitch, self.yaw) = euler_from_quaternion(oriList)
         self.get_logger().info(f"Robot state  {self.pose.position.x, self.pose.position.y, self.yaw}")
@@ -79,7 +80,7 @@ class ObstacleDetection(Node):
         # Hindrets position relativt roboten
         self.x_obstacle = d * math.cos(angle)
         self.y_obstacle = d * math.sin(angle)
-        self.obstacle_distance = i
+        self.obstacle_distance = d
         self.has_scan_received = True
         
 
@@ -97,16 +98,16 @@ class ObstacleDetection(Node):
 
         xgoal = 3.0
         ygoal = 3.0
-        Kp = 3
+        Kp = 4
         goal_diff = 0.2
+        desired_angle = math.atan2(ygoal - self.pose.position.y, xgoal - self.pose.position.x)
         
-        """"
         desired_angle = math.atan2(ygoal - self.pose.position.y, xgoal - self.pose.position.x)
         angular_difference = math.atan2(math.sin(desired_angle - self.yaw), math.cos(desired_angle - self.yaw))
         self.tele_twist.angular.z = Kp * angular_difference
         if(goal_diff > math.sqrt((xgoal-self.pose.position.x)**2 + (ygoal-self.pose.position.y)**2)):
             self.tele_twist.linear.x = 0.0
-        """
+        
 
         """
         TODO: Implement obstacle detection and avoidance!
@@ -144,32 +145,48 @@ class ObstacleDetection(Node):
         # If no valid readings, assume no obstacles
         if not valid_ranges:
             self.cmd_vel_pub.publish(self.tele_twist)
+            self.avoiding = False
             return
             
         # Find the closest obstacle in any direction (full 360° scan)
         
-        
-           
     
-        obstacle_angle = math.atan2(self.y_obstacle - self.pose.position.y, self.x_obstacle - self.pose.position.x)
-        if(self.obstacle_distance < self.stop_distance):
-            new_route = obstacle_angle + math.pi/2
-            self.tele_twist.angular.z = new_route
-            #angular_difference_o = math.atan2(math.sin(new_route - self.yaw), math.cos(new_route- self.yaw))
-            #self.tele_twist.angular.z =Kp * angular_difference_o
-       
-            
-            
         
-        desired_angle = math.atan2(ygoal - self.pose.position.y, xgoal - self.pose.position.x)
-        angular_difference = math.atan2(math.sin(desired_angle - self.yaw), math.cos(desired_angle - self.yaw))
-        self.tele_twist.angular.z = Kp * angular_difference
-        if(goal_diff > math.sqrt((xgoal-self.pose.position.x)**2 + (ygoal-self.pose.position.y)**2)):
+        if(self.obstacle_distance > 0.25):
+            self.avoiding = False
+        
+        obstacle_angle = math.atan2(self.y_obstacle, self.x_obstacle)
+        if(self.obstacle_distance <=  0.25):
+            angle_diff = math.atan2(math.sin(desired_angle - obstacle_angle), math.cos(desired_angle - obstacle_angle))
             self.tele_twist.linear.x = 0.0
+            if not self.avoiding:
+                self.avoiding =True
+                if(angle_diff > 0):
+                    self.side = obstacle_angle + ((math.pi)/2)
+                else:
+                    self.side = obstacle_angle - ((math.pi)/2)
+        
+                
+            new_route=self.side    
+            angular_difference_o = math.atan2(math.sin(new_route - self.yaw), math.cos(new_route- self.yaw))
+            self.tele_twist.angular.z =Kp * angular_difference_o
+            if(angular_difference_o < 0.5 and angular_difference_o > -0.5):
+                self.tele_twist.linear.x = 0.05
+        
+            
+        else:
+            if(not self.avoiding):
+
+                desired_angle = math.atan2(ygoal - self.pose.position.y, xgoal - self.pose.position.x)
+                angular_difference = math.atan2(math.sin(desired_angle - self.yaw), math.cos(desired_angle - self.yaw))
+                self.tele_twist.angular.z = Kp * angular_difference
+                self.tele_twist.linear.x = min(0.2, Kp * math.sqrt((xgoal-self.pose.position.x)**2 + (ygoal-self.pose.position.y)**2))
+            if(goal_diff > math.sqrt((xgoal-self.pose.position.x)**2 + (ygoal-self.pose.position.y)**2)):
+                self.tele_twist.linear.x = 0.0
         # TODO: Implement your obstacle detection logic here!
         # Remember to use obstacle_distance and self.stop_distance in your implementation.
         # Remember to find the angle of the closest obstacle
-
+        
 
         # For now, just use the teleop command (unsafe - replace with your code)
         twist = self.tele_twist
