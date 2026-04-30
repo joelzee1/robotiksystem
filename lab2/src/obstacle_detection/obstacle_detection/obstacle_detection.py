@@ -64,6 +64,7 @@ class ObstacleDetection(Node):
         self.get_logger().info(f"Robot state  {self.pose.position.x, self.pose.position.y, self.yaw}")
 
     def scan_callback(self, msg):
+        
         """Store laser scan data when received"""
         self.scan_ranges = msg.ranges
             # Filtrera bort ogiltiga värden (inf, nan)
@@ -92,21 +93,13 @@ class ObstacleDetection(Node):
         """Regular function to check for obstacles"""
         if self.has_scan_received:
             self.detect_obstacle()
-
     def detect_obstacle(self):
-
-
+        
         xgoal = 3.0
         ygoal = 3.0
-        Kp = 4
+        Kp = 0.5
+        Ko = 0.7
         goal_diff = 0.2
-        desired_angle = math.atan2(ygoal - self.pose.position.y, xgoal - self.pose.position.x)
-        
-        desired_angle = math.atan2(ygoal - self.pose.position.y, xgoal - self.pose.position.x)
-        angular_difference = math.atan2(math.sin(desired_angle - self.yaw), math.cos(desired_angle - self.yaw))
-        self.tele_twist.angular.z = Kp * angular_difference
-        if(goal_diff > math.sqrt((xgoal-self.pose.position.x)**2 + (ygoal-self.pose.position.y)**2)):
-            self.tele_twist.linear.x = 0.0
         
 
         """
@@ -150,37 +143,33 @@ class ObstacleDetection(Node):
             
         # Find the closest obstacle in any direction (full 360° scan)
         
-    
+        desired_angle = math.atan2(ygoal - self.pose.position.y, xgoal - self.pose.position.x)
+        angular_difference = math.atan2(math.sin(desired_angle - self.yaw), math.cos(desired_angle - self.yaw))
         
         if(self.obstacle_distance > 0.25):
             self.avoiding = False
         
         obstacle_angle = math.atan2(self.y_obstacle, self.x_obstacle)
-        if(self.obstacle_distance <=  0.25):
-            angle_diff = math.atan2(math.sin(desired_angle - obstacle_angle), math.cos(desired_angle - obstacle_angle))
-            self.tele_twist.linear.x = 0.0
-            if not self.avoiding:
-                self.avoiding =True
-                if(angle_diff > 0):
-                    self.side = obstacle_angle + ((math.pi)/2)
-                else:
-                    self.side = obstacle_angle - ((math.pi)/2)
+        #forward_scan = self.yaw - obstacle_angle
         
-                
-            new_route=self.side    
-            angular_difference_o = math.atan2(math.sin(new_route - self.yaw), math.cos(new_route- self.yaw))
-            self.tele_twist.angular.z =Kp * angular_difference_o
-            if(angular_difference_o < 0.5 and angular_difference_o > -0.5):
-                self.tele_twist.linear.x = 0.05
-        
+        if(0 < obstacle_angle < math.pi/4 and self.obstacle_distance <=  0.25):
+            new_route = obstacle_angle + ((math.pi)/2)
+            self.avoiding =True
+        elif(-math.pi/4 < obstacle_angle <0 and self.obstacle_distance <=  0.25):
+            new_route = obstacle_angle - ((math.pi)/2)
+            self.avoiding =True
+    
+        self.tele_twist.linear.x = 0.01
+        angular_difference_o = math.atan2(math.sin(new_route - self.yaw), math.cos(new_route- self.yaw))
+        self.tele_twist.angular.z =Ko * angular_difference_o
             
-        else:
-            if(not self.avoiding):
-
-                desired_angle = math.atan2(ygoal - self.pose.position.y, xgoal - self.pose.position.x)
-                angular_difference = math.atan2(math.sin(desired_angle - self.yaw), math.cos(desired_angle - self.yaw))
-                self.tele_twist.angular.z = Kp * angular_difference
-                self.tele_twist.linear.x = min(0.2, Kp * math.sqrt((xgoal-self.pose.position.x)**2 + (ygoal-self.pose.position.y)**2))
+            
+            
+            
+        
+        if(self.avoiding == False):
+            self.tele_twist.angular.z = Kp * angular_difference
+            self.tele_twist.linear.x = min(0.1, Kp * math.sqrt((xgoal-self.pose.position.x)**2 + (ygoal-self.pose.position.y)**2))
             if(goal_diff > math.sqrt((xgoal-self.pose.position.x)**2 + (ygoal-self.pose.position.y)**2)):
                 self.tele_twist.linear.x = 0.0
         # TODO: Implement your obstacle detection logic here!
@@ -193,6 +182,13 @@ class ObstacleDetection(Node):
 
         # Publish the velocity command
         self.cmd_vel_pub.publish(twist)
+
+        
+        
+        
+       
+    
+    
 
     def destroy_node(self):
         """Publish zero velocity when node is destroyed"""
