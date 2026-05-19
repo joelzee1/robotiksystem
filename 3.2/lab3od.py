@@ -109,25 +109,21 @@ class ObstacleDetection(Node):
         self.tele_twist = msg
 
     def timer_callback(self):
-            self.detect_obstacle()
+        self.detect_obstacle()
         
     def detect_obstacle(self):
      
         
-        xgoal = 1.0
-        ygoal = -4.3
+        xgoal = 1.2
+        ygoal = -2.5       
         Kp = 0.7
         Ko = 2.0
         goal_diff = 0.2
         
         twist= TwistStamped()
 
-        twist.header.stamp = self.get_clock().now().to_msg()
-        twist.header.frame_id = "base_link"
 
 
-        #twist.twist.linear.x = 0.1
-        #twist.twist.angular.z = -0.0
         
         
         dx = xgoal - self.pose.position.x
@@ -143,7 +139,7 @@ class ObstacleDetection(Node):
         
         avoid_turn = self.obstacle_angle
 
-        w_avoid = max(0.0, 1.0 - self.obstacle_distance / 0.4)
+        w_avoid = max(0.0, 1.0 - self.obstacle_distance / 0.5)
         w_gtg = 1.0 - w_avoid
 
 
@@ -159,11 +155,6 @@ class ObstacleDetection(Node):
             self.get_logger().info("Goal reached!")
     
 
-        #if not self.has_scan_received or self.obstacle_distance == float("inf"):
-        #    twist.twist.linear.x = 0.1
-        #    twist.twist.angular.z = 0.0
-        #    self.cmd_vel_pub.publish(twist)
-        #    return
        
         self.cmd_vel_pub.publish(twist)
    
