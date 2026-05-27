@@ -137,7 +137,10 @@ class ObstacleDetection(Node):
  
         
         
-        avoid_turn = self.obstacle_angle
+        if self.obstacle_angle > 0:
+            avoid_turn = -1.5
+        else:
+            avoid_turn = 1.5
 
         w_avoid = max(0.0, 1.0 - self.obstacle_distance / 0.5)
         w_gtg = 1.0 - w_avoid
@@ -146,7 +149,7 @@ class ObstacleDetection(Node):
         blended_turn = w_gtg * angular_difference + w_avoid * avoid_turn
         twist.twist.angular.z = blended_turn
 
-        twist.twist.linear.x = 0.1 * w_gtg
+        twist.twist.linear.x = max(0.05,0.15 * w_gtg)
         
         if distance_to_goal < goal_diff:
 

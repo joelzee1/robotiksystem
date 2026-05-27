@@ -20,7 +20,7 @@ def generate_launch_description():
         name='obstacle_detection',
         output='screen',
         parameters=[
-            {'use_sim_time': True},
+            {'use_sim_time': False},
             {'stop_distance': stop_distance}
         ],
     )
@@ -32,7 +32,7 @@ def generate_launch_description():
         name='lidar_visualizer',
         output='screen',
         parameters=[
-            {'use_sim_time': True},
+            {'use_sim_time': False},
             {'stop_distance': stop_distance} 
         ],
     )
