@@ -17,7 +17,8 @@ class ObstacleDetection(Node):
  
     def __init__(self):
         super().__init__("obstacle_detection")
-        
+        self.start_time = self.get_clock().now()
+        self.startup_ignore_time = 1.0  
      
         self.declare_parameter("stop_distance", 0.25) 
         self.stop_distance = (self.get_parameter("stop_distance").get_parameter_value().double_value)
@@ -74,19 +75,22 @@ class ObstacleDetection(Node):
     def scan_callback(self, msg):
         valid_ranges = []
 
+
+   
         for i, r in enumerate(msg.ranges):
 
             if not math.isfinite(r):
                 continue
-
+                
             angle = msg.angle_min + i * msg.angle_increment
 
+           
             angle = math.atan2(math.sin(angle), math.cos(angle))
 
-
-            valid_ranges.append((i, r, angle))
-
+        
             
+
+            valid_ranges.append((i, r, angle))    
 
         if not valid_ranges:
             return
@@ -100,10 +104,11 @@ class ObstacleDetection(Node):
 
         self.obstacle_distance = d
         self.obstacle_angle = angle
-        
 
         self.has_scan_received = True
-            
+        
+
+                
     
     def cmd_vel_raw_callback(self, msg):
         self.tele_twist = msg
@@ -112,12 +117,16 @@ class ObstacleDetection(Node):
         self.detect_obstacle()
         
     def detect_obstacle(self):
-     
+        if not self.has_scan_received:
+            return
+        if not self.has_odom:
+            return
         
-        xgoal = 1.2
-        ygoal = -2.5       
-        Kp = 0.7
-        Ko = 2.0
+        
+        xgoal = 1.5
+        ygoal = -2.2   
+        base_speed = 0.2
+        avoid_distance = 0.6
         goal_diff = 0.2
         
         twist= TwistStamped()
@@ -134,22 +143,22 @@ class ObstacleDetection(Node):
         
         desired_angle = math.atan2(dy,dx)
         angular_difference = math.atan2(math.sin(desired_angle - self.yaw), math.cos(desired_angle - self.yaw))
- 
-        
-        
-        if self.obstacle_angle > 0:
-            avoid_turn = -1.5
-        else:
-            avoid_turn = 1.5
 
-        w_avoid = max(0.0, 1.0 - self.obstacle_distance / 0.5)
+ 
+        if self.obstacle_angle > 0:
+            avoid_turn = -1.75
+        else:
+            avoid_turn = 1.75
+
+        w_avoid = max(0.0, 1.0 - self.obstacle_distance / 0.4)
         w_gtg = 1.0 - w_avoid
 
 
         blended_turn = w_gtg * angular_difference + w_avoid * avoid_turn
-        twist.twist.angular.z = blended_turn
+        twist.twist.angular.z = max(min(blended_turn, 1.5), -1.5)
 
-        twist.twist.linear.x = max(0.05,0.15 * w_gtg)
+        twist.twist.linear.x = max(0.02,base_speed * w_gtg)
+            
         
         if distance_to_goal < goal_diff:
 
@@ -157,14 +166,7 @@ class ObstacleDetection(Node):
             twist.twist.angular.z = 0.0
             self.get_logger().info("Goal reached!")
     
-
-       
         self.cmd_vel_pub.publish(twist)
-   
-        
-        
-        
-       
     
     
 
